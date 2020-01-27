@@ -31,6 +31,8 @@ print(tf.__version__)  # 2.0.0
 from callbacks_model import get_check_pointer_callback
 from callbacks_model import get_tensorboard_callback
 
+from transferlearning_model import TransferLearningModel
+
 
 # ======================================================================
 # ======================================================================
@@ -64,16 +66,13 @@ CLASS_NAMES = np.array([item.name for item in train_dataset_path.glob('*') if it
 number_of_classes = len(CLASS_NAMES)
 print("CLASS_NAMES:", CLASS_NAMES)
 
-
 # show some image examples
-
 images = list(train_dataset_path.glob('portrait/*'))
 
 for image_path in images[:3]:
     im = Image.open(image_path)
     plt.imshow(im)
     plt.show()
-
 
 # ======================================================================
 # ======================================================================
@@ -143,7 +142,6 @@ print("log path  :", log_path)
 print("model name:", output_name)
 print("\n")
 
-
 # ======================================================================
 # ======================================================================
 # Setup output
@@ -158,24 +156,11 @@ if __name__ == '__main__':
 
     # ======================================================================
     # ======================================================================
-    # Configure model
+    # Build model
 
     IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)
 
-    # Create the base model from the pre-trained model MobileNet V2
-    base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
-                                                   include_top=False,
-                                                   weights='imagenet')
-
-    base_model.trainable = False
-
-    model = tf.keras.Sequential([
-        base_model,
-        tf.keras.layers.Conv2D(32, 3, activation='relu'),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(number_of_classes, activation='softmax')
-    ])
+    model = TransferLearningModel(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
                   loss='categorical_crossentropy',
@@ -232,17 +217,7 @@ if __name__ == '__main__':
     # ======================================================================
     # Find tuning phase
 
-    base_model.trainable = True
-
-    # Let's take a look to see how many layers are in the base model
-    print("Number of layers in the base model: ", len(base_model.layers))
-
-    # Fine tune from this layer onwards
-    fine_tune_at = 100
-
-    # Freeze all the layers before the `fine_tune_at` layer
-    for layer in base_model.layers[:fine_tune_at]:
-        layer.trainable = False
+    model.configureForFinetuning()
 
     model.compile(loss='categorical_crossentropy',
                   optimizer=tf.keras.optimizers.Adam(1e-5),
