@@ -1,6 +1,9 @@
 # Image Classification for TensorFlow 2.0
 
-- transfer learning
+## Training Methods
+
+- [x] transfer learning
+- [ ] custom model
 
 ## Getting Started
 
