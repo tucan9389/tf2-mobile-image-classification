@@ -23,15 +23,18 @@ from datetime import datetime
 import os
 import pathlib
 
+# relate link: https://github.com/dmlc/xgboost/issues/1715
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
-print(tf.__version__)
+print(tf.__version__)  # 2.0.0
 
 from callbacks_model import get_check_pointer_callback
 from callbacks_model import get_tensorboard_callback
 
 
-# configure dataset path
+# ======================================================================
+# ======================================================================
+# Configure dataset path
 
 base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset"
 
@@ -45,9 +48,7 @@ train_dataset_path = pathlib.Path(train_dataset_path)
 validation_dataset_path = pathlib.Path(validation_dataset_path)
 test_dataset_path = pathlib.Path(test_dataset_path)
 
-
 # check number of dataset images
-
 train_image_count = len(list(train_dataset_path.glob('*/*.jpg')))
 image_count = train_image_count
 print("train_image_count:", train_image_count)
@@ -58,9 +59,7 @@ print("validation_image_count:", validation_image_count)
 test_image_count = len(list(test_dataset_path.glob('*/*.jpg')))
 print("test_image_count:", test_image_count)
 
-
 # number of classes
-
 CLASS_NAMES = np.array([item.name for item in train_dataset_path.glob('*') if item.name != "LICENSE.txt"])
 number_of_classes = len(CLASS_NAMES)
 print("CLASS_NAMES:", CLASS_NAMES)
@@ -78,6 +77,7 @@ for image_path in images[:3]:
 
 # ======================================================================
 # ======================================================================
+# Make generator
 
 # The 1./255 is to convert from uint8 to float32 in range [0,1].
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
@@ -112,37 +112,6 @@ def show_batch(image_batch, label_batch):
 
 # image_batch, label_batch = next(train_generator)
 # # show_batch(image_batch, label_batch)
-
-# ======================================================================
-# ======================================================================
-# Configure model
-
-IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)
-
-# Create the base model from the pre-trained model MobileNet V2
-base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
-                                              include_top=False,
-                                              weights='imagenet')
-
-
-base_model.trainable = False
-
-model = tf.keras.Sequential([
-  base_model,
-  tf.keras.layers.Conv2D(32, 3, activation='relu'),
-  tf.keras.layers.Dropout(0.2),
-  tf.keras.layers.GlobalAveragePooling2D(),
-  tf.keras.layers.Dense(number_of_classes, activation='softmax')
-])
-
-model.compile(optimizer=tf.keras.optimizers.Adam(),
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-
-model.summary()
-
-print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
-
 
 # ======================================================================
 # ======================================================================
@@ -185,77 +154,108 @@ check_pointer_callback = get_check_pointer_callback(model_path=model_path, outpu
 # output tensorboard log
 tensorboard_callback = get_tensorboard_callback(log_path=log_path, output_name=output_name)
 
-# ======================================================================
-# ======================================================================
-# TRAINING
+if __name__ == '__main__':
 
-epochs = 4
+    # ======================================================================
+    # ======================================================================
+    # Configure model
 
-history = model.fit(train_generator,
-                    epochs=epochs,
-                    validation_data=val_generator,
-                    callbacks=[
-                        check_pointer_callback,
-                        tensorboard_callback]
-                    )
+    IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)
 
-# ======================================================================
-# ======================================================================
+    # Create the base model from the pre-trained model MobileNet V2
+    base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
+                                                   include_top=False,
+                                                   weights='imagenet')
 
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
+    base_model.trainable = False
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
+    model = tf.keras.Sequential([
+        base_model,
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dense(number_of_classes, activation='softmax')
+    ])
 
-plt.figure(figsize=(8, 8))
-plt.subplot(2, 1, 1)
-plt.plot(acc, label='Training Accuracy')
-plt.plot(val_acc, label='Validation Accuracy')
-plt.legend(loc='lower right')
-plt.ylabel('Accuracy')
-plt.ylim([min(plt.ylim()), 1])
-plt.title('Training and Validation Accuracy')
+    model.compile(optimizer=tf.keras.optimizers.Adam(),
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
-plt.subplot(2, 1, 2)
-plt.plot(loss, label='Training Loss')
-plt.plot(val_loss, label='Validation Loss')
-plt.legend(loc='upper right')
-plt.ylabel('Cross Entropy')
-plt.ylim([0, 1.0])
-plt.title('Training and Validation Loss')
-plt.xlabel('epoch')
-plt.show()
+    model.summary()
 
-# ======================================================================
-# ======================================================================
-# Find tuning phase
+    print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
 
-base_model.trainable = True
+    # ======================================================================
+    # ======================================================================
+    # TRAINING
 
-# Let's take a look to see how many layers are in the base model
-print("Number of layers in the base model: ", len(base_model.layers))
+    epochs = 4
 
-# Fine tune from this layer onwards
-fine_tune_at = 100
+    history = model.fit(train_generator,
+                        epochs=epochs,
+                        validation_data=val_generator,
+                        callbacks=[
+                            check_pointer_callback,
+                            tensorboard_callback]
+                        )
 
-# Freeze all the layers before the `fine_tune_at` layer
-for layer in base_model.layers[:fine_tune_at]:
-    layer.trainable =  False
+    # ======================================================================
+    # ======================================================================
+    # Show result
 
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
 
-model.compile(loss='categorical_crossentropy',
-              optimizer=tf.keras.optimizers.Adam(1e-5),
-              metrics=['accuracy'])
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
 
-model.summary()
+    plt.figure(figsize=(8, 8))
+    plt.subplot(2, 1, 1)
+    plt.plot(acc, label='Training Accuracy')
+    plt.plot(val_acc, label='Validation Accuracy')
+    plt.legend(loc='lower right')
+    plt.ylabel('Accuracy')
+    plt.ylim([min(plt.ylim()), 1])
+    plt.title('Training and Validation Accuracy')
 
-print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
+    plt.subplot(2, 1, 2)
+    plt.plot(loss, label='Training Loss')
+    plt.plot(val_loss, label='Validation Loss')
+    plt.legend(loc='upper right')
+    plt.ylabel('Cross Entropy')
+    plt.ylim([0, 1.0])
+    plt.title('Training and Validation Loss')
+    plt.xlabel('epoch')
+    plt.show()
 
-history_fine = model.fit(val_generator,
-                         epochs=5,
-                         validation_data=val_generator,
-                         callbacks=[
-                             check_pointer_callback,
-                             tensorboard_callback]
-                         )
+    # ======================================================================
+    # ======================================================================
+    # Find tuning phase
+
+    base_model.trainable = True
+
+    # Let's take a look to see how many layers are in the base model
+    print("Number of layers in the base model: ", len(base_model.layers))
+
+    # Fine tune from this layer onwards
+    fine_tune_at = 100
+
+    # Freeze all the layers before the `fine_tune_at` layer
+    for layer in base_model.layers[:fine_tune_at]:
+        layer.trainable = False
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=tf.keras.optimizers.Adam(1e-5),
+                  metrics=['accuracy'])
+
+    model.summary()
+
+    print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
+
+    history_fine = model.fit(val_generator,
+                             epochs=5,
+                             validation_data=val_generator,
+                             callbacks=[
+                                 check_pointer_callback,
+                                 tensorboard_callback]
+                             )
