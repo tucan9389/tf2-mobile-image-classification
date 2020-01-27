@@ -15,20 +15,17 @@
 
 import tensorflow as tf
 
-import IPython.display as display
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-import os
-import matplotlib
 from datetime import datetime
+
+import os
+import pathlib
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 print(tf.__version__)
-
-import pathlib
-
 
 from callbacks_model import get_check_pointer_callback
 from callbacks_model import get_tensorboard_callback
@@ -36,12 +33,11 @@ from callbacks_model import get_tensorboard_callback
 
 # configure dataset path
 
-# base_dataset_path = "/content/datasets/generated_orientation_dataset"
 base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset"
 
-train_dataset_path = os.path.join(base_dataset_path, "unlabeled2017_th")
-validation_dataset_path = os.path.join(base_dataset_path, "val2017_th")
-test_dataset_path = os.path.join(base_dataset_path, "test2017_th")
+train_dataset_path = os.path.join(base_dataset_path, "unlabeled2017_th")  # train dataset path
+validation_dataset_path = os.path.join(base_dataset_path, "val2017_th")  # validation dataset path
+test_dataset_path = os.path.join(base_dataset_path, "test2017_th")  # test dataset path
 
 base_dataset_path = pathlib.Path(base_dataset_path)
 
@@ -80,7 +76,8 @@ for image_path in images[:3]:
     plt.show()
 
 
-# -----------------------------------------------------------------
+# ======================================================================
+# ======================================================================
 
 # The 1./255 is to convert from uint8 to float32 in range [0,1].
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
@@ -106,17 +103,18 @@ val_generator = image_generator.flow_from_directory(
     subset='validation')
 
 def show_batch(image_batch, label_batch):
-  plt.figure(figsize=(10,10))
-  for n in range(25):
-      ax = plt.subplot(5,5,n+1)
-      plt.imshow(image_batch[n])
-      plt.title(CLASS_NAMES[label_batch[n]==1][0].title())
-      plt.axis('off')
+    plt.figure(figsize=(10, 10))
+    for n in range(25):
+        _ = plt.subplot(5, 5, n + 1)
+        plt.imshow(image_batch[n])
+        plt.title(CLASS_NAMES[label_batch[n] == 1][0].title())
+        plt.axis('off')
 
 # image_batch, label_batch = next(train_generator)
 # # show_batch(image_batch, label_batch)
 
-# -----------------------------------------------------------------
+# ======================================================================
+# ======================================================================
 # Configure model
 
 IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)
@@ -146,9 +144,9 @@ model.summary()
 print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
 
 
-# ----------------------------------------------------------
-# ---------------------- setup output ----------------------
-# ----------------------------------------------------------
+# ======================================================================
+# ======================================================================
+# setup output
 
 current_time = datetime.now().strftime("%m%d%H%M")
 output_path = "/Volumes/tucan-SSD/ml-project/orientation-detection/output"
@@ -177,14 +175,18 @@ print("model name:", output_name)
 print("\n")
 
 
-# --------------------------------------------------------------------------------------------------------------------
+# ======================================================================
+# ======================================================================
+# Setup output
+
 # output model file(.hdf5)
 check_pointer_callback = get_check_pointer_callback(model_path=model_path, output_name=output_name)
 
 # output tensorboard log
 tensorboard_callback = get_tensorboard_callback(log_path=log_path, output_name=output_name)
 
-# -----------------------------------------------------------------
+# ======================================================================
+# ======================================================================
 # TRAINING
 
 epochs = 4
@@ -197,7 +199,8 @@ history = model.fit(train_generator,
                         tensorboard_callback]
                     )
 
-# -----------------------------------------------------------------
+# ======================================================================
+# ======================================================================
 
 acc = history.history['accuracy']
 val_acc = history.history['val_accuracy']
@@ -224,8 +227,9 @@ plt.title('Training and Validation Loss')
 plt.xlabel('epoch')
 plt.show()
 
-# -----------------------------------------------------------------
-# Find tuning
+# ======================================================================
+# ======================================================================
+# Find tuning phase
 
 base_model.trainable = True
 
