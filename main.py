@@ -174,7 +174,7 @@ if __name__ == '__main__':
     # ======================================================================
     # TRAINING
 
-    epochs = 4
+    epochs = 5
 
     history = model.fit(train_generator,
                         epochs=epochs,
@@ -188,34 +188,34 @@ if __name__ == '__main__':
     # ======================================================================
     # Show result
 
-    acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-
-    plt.figure(figsize=(8, 8))
-    plt.subplot(2, 1, 1)
-    plt.plot(acc, label='Training Accuracy')
-    plt.plot(val_acc, label='Validation Accuracy')
-    plt.legend(loc='lower right')
-    plt.ylabel('Accuracy')
-    plt.ylim([min(plt.ylim()), 1])
-    plt.title('Training and Validation Accuracy')
-
-    plt.subplot(2, 1, 2)
-    plt.plot(loss, label='Training Loss')
-    plt.plot(val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
-    plt.ylabel('Cross Entropy')
-    plt.ylim([0, 1.0])
-    plt.title('Training and Validation Loss')
-    plt.xlabel('epoch')
-    plt.show()
+    # acc = history.history['accuracy']
+    # val_acc = history.history['val_accuracy']
+    #
+    # loss = history.history['loss']
+    # val_loss = history.history['val_loss']
+    #
+    # plt.figure(figsize=(8, 8))
+    # plt.subplot(2, 1, 1)
+    # plt.plot(acc, label='Training Accuracy')
+    # plt.plot(val_acc, label='Validation Accuracy')
+    # plt.legend(loc='lower right')
+    # plt.ylabel('Accuracy')
+    # plt.ylim([min(plt.ylim()), 1])
+    # plt.title('Training and Validation Accuracy')
+    #
+    # plt.subplot(2, 1, 2)
+    # plt.plot(loss, label='Training Loss')
+    # plt.plot(val_loss, label='Validation Loss')
+    # plt.legend(loc='upper right')
+    # plt.ylabel('Cross Entropy')
+    # plt.ylim([0, 1.0])
+    # plt.title('Training and Validation Loss')
+    # plt.xlabel('epoch')
+    # plt.show()
 
     # ======================================================================
     # ======================================================================
-    # Find tuning phase
+    # Fine-tuning phase
 
     model.configureForFinetuning()
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
 
     print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
 
-    history_fine = model.fit(val_generator,
+    history_fine = model.fit(train_generator,
                              epochs=5,
                              validation_data=val_generator,
                              callbacks=[

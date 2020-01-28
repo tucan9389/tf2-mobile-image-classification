@@ -17,7 +17,7 @@ import os
 import tensorflow as tf
 
 def get_check_pointer_callback(model_path, output_name):
-    checkpoint_path = os.path.join(model_path, output_name + ".hdf5")  # ".ckpt"
+    checkpoint_path = os.path.join(model_path, output_name + ".h5")  # ".ckpt"
     check_pointer_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
                                                                 save_weights_only=False,
                                                                 verbose=1)
@@ -26,7 +26,10 @@ def get_check_pointer_callback(model_path, output_name):
 
 def get_tensorboard_callback(log_path, output_name):
     log_path = os.path.join(log_path, output_name)
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path, histogram_freq=0, write_graph=True,
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_path,
+                                                          histogram_freq=0,
+                                                          write_graph=True,
+                                                          update_freq=200,
                                                           write_images=True)
 
     return tensorboard_callback

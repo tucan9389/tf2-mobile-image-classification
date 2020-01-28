@@ -1,0 +1,3 @@
+tfcoreml==1.1
+coremltools==3.2
+sympy==1.5.1
