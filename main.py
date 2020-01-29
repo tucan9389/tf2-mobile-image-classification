@@ -28,10 +28,10 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 print(tf.__version__)  # 2.0.0
 
-from callbacks_model import get_check_pointer_callback
-from callbacks_model import get_tensorboard_callback
+from trainer.callbacks_model import get_check_pointer_callback
+from trainer.callbacks_model import get_tensorboard_callback
 
-from transferlearning_model import TransferLearningModel
+from trainer.transferlearning_model import TransferLearningModel
 
 
 # ======================================================================

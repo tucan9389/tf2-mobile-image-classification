@@ -36,3 +36,4 @@
 
 - [colab - images.ipynb](https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/load_data/images.ipynb)
 - [colab - flowers_tf_lite.ipynb](https://colab.research.google.com/github/tensorflow/examples/blob/master/community/en/flowers_tf_lite.ipynb)
+- [Ahmkel/Keras-Project-Template](https://github.com/Ahmkel/Keras-Project-Template)
