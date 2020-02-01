@@ -53,3 +53,22 @@ class TransferLearningModel(tf.keras.Model):
         # Freeze all the layers before the `fine_tune_at` layer
         for layer in self.base_model.layers[:fine_tune_at]:
             layer.trainable = False
+
+def build_model(input_shape, number_of_classes):
+    # Create the base model from the pre-trained model MobileNet V2
+    base_model = tf.keras.applications.MobileNetV2(input_shape=input_shape,
+                                                        include_top=False,
+                                                        weights='imagenet')
+
+    base_model.trainable = False
+
+    model = tf.keras.Sequential([
+        base_model,
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dense(number_of_classes, activation='softmax')
+    ])
+
+    return base_model, model
+

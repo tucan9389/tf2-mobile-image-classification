@@ -28,6 +28,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 print(tf.__version__)  # 2.0.0
 
+from trainer.transferlearning_model import build_model
 from trainer.callbacks_model import get_check_pointer_callback
 from trainer.callbacks_model import get_tensorboard_callback
 
@@ -38,11 +39,13 @@ from trainer.transferlearning_model import TransferLearningModel
 # ======================================================================
 # Configure dataset path
 
-base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset"
+# config
+base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset_4class_224x224"
+# base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/tmp_dataset_4class_224x224"
 
-train_dataset_path = os.path.join(base_dataset_path, "unlabeled2017_th")  # train dataset path
-validation_dataset_path = os.path.join(base_dataset_path, "val2017_th")  # validation dataset path
-test_dataset_path = os.path.join(base_dataset_path, "test2017_th")  # test dataset path
+train_dataset_path = os.path.join(base_dataset_path, "unlabeled2017_224x224")  # train dataset path
+validation_dataset_path = os.path.join(base_dataset_path, "val2017_224x224")  # validation dataset path
+test_dataset_path = os.path.join(base_dataset_path, "test2017_224x224")  # test dataset path
 
 base_dataset_path = pathlib.Path(base_dataset_path)
 
@@ -81,9 +84,9 @@ for image_path in images[:3]:
 # The 1./255 is to convert from uint8 to float32 in range [0,1].
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
-BATCH_SIZE = 32
-IMG_HEIGHT = 224
-IMG_WIDTH = 224
+BATCH_SIZE = 32  # hyper parameter
+IMG_HEIGHT = 224  # hyper parameter
+IMG_WIDTH = 224  # hyper parameter
 STEPS_PER_EPOCH = np.ceil(image_count/BATCH_SIZE)
 
 train_generator = image_generator.flow_from_directory(
@@ -121,6 +124,7 @@ output_path = "/Volumes/tucan-SSD/ml-project/orientation-detection/output"
 if not os.path.exists(output_path):
     os.mkdir(output_path)
 
+# config
 output_model_name = "_mobilenetv2"  # mobilenetv2
 # output_base_model_name = "_{}".format(model_config.base_model_name)
 # output_learning_rate = "_lr{}".format(train_config.learning_rate)
@@ -128,10 +132,12 @@ output_model_name = "_mobilenetv2"  # mobilenetv2
 
 output_name = current_time + output_model_name  # + output_learning_rate  # + output_decoder_filters
 
+# config
 model_path = os.path.join(output_path, "models")
 if not os.path.exists(model_path):
     os.mkdir(model_path)
 
+# config
 log_path = os.path.join(output_path, "logs")
 if not os.path.exists(log_path):
     os.mkdir(log_path)
@@ -158,9 +164,12 @@ if __name__ == '__main__':
     # ======================================================================
     # Build model
 
-    IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)
+    IMG_SHAPE = (IMG_HEIGHT, IMG_WIDTH, 3)  # config
 
-    model = TransferLearningModel(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
+    # model = TransferLearningModel(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
+    ################################
+    base_model, model = build_model(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
+    ################################
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
                   loss='categorical_crossentropy',
@@ -172,17 +181,26 @@ if __name__ == '__main__':
 
     # ======================================================================
     # ======================================================================
-    # TRAINING
 
-    epochs = 5
+    feature_extraction_epochs = 6
+    fine_tuning_epochs = 6
+
+    # ======================================================================
+    # ======================================================================
+    # TRAINING - feature extraction step
 
     history = model.fit(train_generator,
-                        epochs=epochs,
+                        epochs=feature_extraction_epochs,
                         validation_data=val_generator,
                         callbacks=[
                             check_pointer_callback,
                             tensorboard_callback]
                         )
+
+    # config
+    output_model_path = os.path.join(model_path, output_name + "_middle" + ".h5")
+    print("save to '", output_model_path, "'")
+    model.save(output_model_path)
 
     # ======================================================================
     # ======================================================================
@@ -215,9 +233,22 @@ if __name__ == '__main__':
 
     # ======================================================================
     # ======================================================================
-    # Fine-tuning phase
+    # TRAINING2 - fine tuning step
 
-    model.configureForFinetuning()
+    # model.configureForFinetuning()
+    ################################
+    base_model.trainable = True
+
+    # Let's take a look to see how many layers are in the base model
+    print("Number of layers in the base model: ", len(base_model.layers))
+
+    # Fine tune from this layer onwards
+    fine_tune_at = 100
+
+    # Freeze all the layers before the `fine_tune_at` layer
+    for layer in base_model.layers[:fine_tune_at]:
+        layer.trainable = False
+    ################################
 
     model.compile(loss='categorical_crossentropy',
                   optimizer=tf.keras.optimizers.Adam(1e-5),
@@ -228,9 +259,14 @@ if __name__ == '__main__':
     print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
 
     history_fine = model.fit(train_generator,
-                             epochs=5,
+                             epochs=fine_tuning_epochs,
                              validation_data=val_generator,
                              callbacks=[
                                  check_pointer_callback,
                                  tensorboard_callback]
                              )
+
+    # config
+    output_model_path = os.path.join(model_path, output_name + "_final" + ".h5")
+    print("save to '", output_model_path, "'")
+    model.save(output_model_path)

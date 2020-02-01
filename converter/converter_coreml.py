@@ -19,15 +19,17 @@ import tfcoreml
 import os
 
 model_directory_path = "/Volumes/tucan-SSD/ml-project/orientation-detection/output/models"
-model_name = "01272307_mobilenetv2"
+model_name = "02010020_mobilenetv2_final"
 
 input_keras_model_path = os.path.join(model_directory_path, model_name + ".h5")
+print("input_keras_model_path:", input_keras_model_path)
 
 output_model_name = "" + model_name
 output_tflite_model_directory_path = os.path.join(model_directory_path, "mlmodel")
 if not os.path.exists(output_tflite_model_directory_path):
     os.mkdir(output_tflite_model_directory_path)
 output_tflite_model_path = os.path.join(output_tflite_model_directory_path, "orientation_detection_" + output_model_name + ".mlmodel")
+print("output_tflite_model_path:", output_tflite_model_path)
 
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
@@ -45,10 +47,14 @@ if __name__ == '__main__':
     keras_output_node_name = keras_model.outputs[0].name.split(':')[0]
     graph_output_node_name = keras_output_node_name.split('/')[-1]
 
+    print(keras_model.inputs)
+    print("input_name:", input_name)
+    print("keras_output_node_name:", keras_output_node_name)
+    print("graph_output_node_name:", graph_output_node_name)
+
     # convert this model to Core ML format
     model = tfcoreml.convert(tf_model_path=input_keras_model_path,
-                             input_name_shape_dict={input_name: (1, IMG_HEIGHT, IMG_WIDTH)},
+                             input_name_shape_dict={input_name: (1, IMG_HEIGHT, IMG_WIDTH, 3)},
                              output_feature_names=[graph_output_node_name],
                              minimum_ios_deployment_target='13')
     model.save(output_tflite_model_path)
-
