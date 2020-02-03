@@ -72,3 +72,11 @@ def build_model(input_shape, number_of_classes):
 
     return base_model, model
 
+def build_model2(input_shape, number_of_classes):
+    return tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, (2, 2), input_shape=input_shape),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dense(number_of_classes, activation='softmax')
+    ])

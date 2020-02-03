@@ -28,20 +28,17 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 print(tf.__version__)  # 2.0.0
 
-from trainer.transferlearning_model import build_model
-from trainer.callbacks_model import get_check_pointer_callback
-from trainer.callbacks_model import get_tensorboard_callback
-
-from trainer.transferlearning_model import TransferLearningModel
-
+from trainer.tf2.transferlearning_model import build_model, build_model2
+from trainer.tf2.callbacks_model import get_check_pointer_callback
+from trainer.tf2.callbacks_model import get_tensorboard_callback
 
 # ======================================================================
 # ======================================================================
 # Configure dataset path
 
 # config
-base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset_4class_224x224"
-# base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/tmp_dataset_4class_224x224"
+# base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/generated_orientation_dataset_4class_224x224"
+base_dataset_path = "/Volumes/tucan-SSD/datasets/coco/tucan9389_generated_dataset/tmp_dataset_4class_224x224"
 
 train_dataset_path = os.path.join(base_dataset_path, "unlabeled2017_224x224")  # train dataset path
 validation_dataset_path = os.path.join(base_dataset_path, "val2017_224x224")  # validation dataset path
@@ -65,17 +62,17 @@ test_image_count = len(list(test_dataset_path.glob('*/*.jpg')))
 print("test_image_count:", test_image_count)
 
 # number of classes
-CLASS_NAMES = np.array([item.name for item in train_dataset_path.glob('*') if item.name != "LICENSE.txt"])
+CLASS_NAMES = np.array([item.name for item in train_dataset_path.glob('*') if item.name != "LICENSE.txt" and item.name != ".DS_Store"] )
 number_of_classes = len(CLASS_NAMES)
 print("CLASS_NAMES:", CLASS_NAMES)
 
-# show some image examples
-images = list(train_dataset_path.glob('portrait/*'))
-
-for image_path in images[:3]:
-    im = Image.open(image_path)
-    plt.imshow(im)
-    plt.show()
+## show some image examples
+# images = list(train_dataset_path.glob('portrait/*'))
+#
+# for image_path in images[:3]:
+#     im = Image.open(image_path)
+#     plt.imshow(im)
+#     plt.show()
 
 # ======================================================================
 # ======================================================================
@@ -125,7 +122,7 @@ if not os.path.exists(output_path):
     os.mkdir(output_path)
 
 # config
-output_model_name = "_mobilenetv2"  # mobilenetv2
+output_model_name = "_tmp"  # mobilenetv2
 # output_base_model_name = "_{}".format(model_config.base_model_name)
 # output_learning_rate = "_lr{}".format(train_config.learning_rate)
 # output_decoder_filters = "_{}".format(model_config.filter_name)
@@ -168,7 +165,8 @@ if __name__ == '__main__':
 
     # model = TransferLearningModel(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
     ################################
-    base_model, model = build_model(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
+    #base_model, model = build_model(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
+    model = build_model2(input_shape=IMG_SHAPE, number_of_classes=number_of_classes)
     ################################
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
@@ -231,42 +229,42 @@ if __name__ == '__main__':
     # plt.xlabel('epoch')
     # plt.show()
 
-    # ======================================================================
-    # ======================================================================
-    # TRAINING2 - fine tuning step
-
-    # model.configureForFinetuning()
-    ################################
-    base_model.trainable = True
-
-    # Let's take a look to see how many layers are in the base model
-    print("Number of layers in the base model: ", len(base_model.layers))
-
-    # Fine tune from this layer onwards
-    fine_tune_at = 100
-
-    # Freeze all the layers before the `fine_tune_at` layer
-    for layer in base_model.layers[:fine_tune_at]:
-        layer.trainable = False
-    ################################
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=tf.keras.optimizers.Adam(1e-5),
-                  metrics=['accuracy'])
-
-    model.summary()
-
-    print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
-
-    history_fine = model.fit(train_generator,
-                             epochs=fine_tuning_epochs,
-                             validation_data=val_generator,
-                             callbacks=[
-                                 check_pointer_callback,
-                                 tensorboard_callback]
-                             )
-
-    # config
-    output_model_path = os.path.join(model_path, output_name + "_final" + ".h5")
-    print("save to '", output_model_path, "'")
-    model.save(output_model_path)
+    # # ======================================================================
+    # # ======================================================================
+    # # TRAINING2 - fine tuning step
+    #
+    # # model.configureForFinetuning()
+    # ################################
+    # base_model.trainable = True
+    #
+    # # Let's take a look to see how many layers are in the base model
+    # print("Number of layers in the base model: ", len(base_model.layers))
+    #
+    # # Fine tune from this layer onwards
+    # fine_tune_at = 100
+    #
+    # # Freeze all the layers before the `fine_tune_at` layer
+    # for layer in base_model.layers[:fine_tune_at]:
+    #     layer.trainable = False
+    # ################################
+    #
+    # model.compile(loss='categorical_crossentropy',
+    #               optimizer=tf.keras.optimizers.Adam(1e-5),
+    #               metrics=['accuracy'])
+    #
+    # model.summary()
+    #
+    # print('Number of trainable variables = {}'.format(len(model.trainable_variables)))
+    #
+    # history_fine = model.fit(train_generator,
+    #                          epochs=fine_tuning_epochs,
+    #                          validation_data=val_generator,
+    #                          callbacks=[
+    #                              check_pointer_callback,
+    #                              tensorboard_callback]
+    #                          )
+    #
+    # # config
+    # output_model_path = os.path.join(model_path, output_name + "_final" + ".h5")
+    # print("save to '", output_model_path, "'")
+    # model.save(output_model_path)

@@ -1,4 +1,4 @@
-# Image Classification for TensorFlow 2.0
+# Mobile Image Classification for TensorFlow 2.0
 
 ## Training Methods
 
